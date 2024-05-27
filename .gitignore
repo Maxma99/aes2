@@ -1,2 +1,6 @@
-
+catboost_info/
 .DS_Store
+train_feats.*
+*.cbm
+*.txt
+*.bin
