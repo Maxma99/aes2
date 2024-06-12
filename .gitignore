@@ -1,6 +1,17 @@
 catboost_info/
+aes-deberta-large/
 .DS_Store
 train_feats.*
 *.cbm
 *.txt
 *.bin
+*.zip
+aes2-400-20240419134941/
+aes2-added-fb-prize-as-features-preprocessing/
+0927-deberta-v3-large-unscale/
+microsoft-deberta-v3-large/
+train_data/
+__pycache__/
+best_model.weights.h5
+argument-classifier/
+

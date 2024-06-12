@@ -1,0 +1,14 @@
+experimentName: lgbm_xgboost_catboost_experiment
+trialConcurrency: 4
+maxExecDuration: 1h
+maxTrialNum: 100
+trainingServicePlatform: local
+searchSpaceFile: search_space.json
+tuner:
+  name: TPE
+  classArgs:
+    optimize_mode: maximize
+trialCommand: python3 /home/mcq/GitHub/aes2/trials-aes2-modeling-with-fb-scoring.py
+trialCodeDirectory: /home/mcq/GitHub/aes2/
+localConfig:
+  useActiveGpu: true
