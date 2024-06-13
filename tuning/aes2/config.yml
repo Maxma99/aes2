@@ -1,0 +1,14 @@
+experimentName: lgbm_xgboost_aes2
+trialConcurrency: 4
+maxTrialNumber: 100
+searchSpaceFile: search_space.json
+tuner:
+  name: TPE
+  classArgs:
+    optimize_mode: maximize
+trialCommand: python /home/mcq/GitHub/aes2/tuning/aes2/trials.py
+trialCodeDirectory: /home/mcq/GitHub/aes2/tuning/aes2
+trainingService:  # For other platforms, check mnist-pytorch example
+  platform: local
+# localConfig:
+#   useActiveGpu: true

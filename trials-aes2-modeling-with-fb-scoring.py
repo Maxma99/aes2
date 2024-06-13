@@ -3,22 +3,22 @@ import aes2_added_fb_prize_as_features_preprocessing
 
 # %%
 import gc
-from catboost import CatBoostClassifier, Pool, CatBoostRegressor
+# from catboost import CatBoostClassifier, Pool, CatBoostRegressor
 gc.collect()
 
 # %%
 import pickle
 
-with open("kaggle/usr/lib/aes2-added-fb-prize-as-features-preprocessing/train_feats.pickle", "rb") as f:
+with open("/kaggle/input/train_data/train_feats.pickle", "rb") as f:
     train_feats = pickle.load(f)
-with open("kaggle/usr/lib/aes2-added-fb-prize-as-features-preprocessing/X.pickle", "rb") as f:
+with open("/kaggle/input/aes2_train_data/X.pickle", "rb") as f:
     X = pickle.load(f)
-with open("kaggle/usr/lib/aes2-added-fb-prize-as-features-preprocessing/y.pickle", "rb") as f:
+with open("/kaggle/input/train_data/y.pickle", "rb") as f:
     y = pickle.load(f)
-with open("kaggle/usr/lib/aes2-added-fb-prize-as-features-preprocessing/y_split.pickle", "rb") as f:
+with open("/kaggle/input/train_data/y_split.pickle", "rb") as f:
     y_split = pickle.load(f)
 with open(
-    "kaggle/input/aes2-eval-added-fb-prize-as-features-8168c5/feature_select.pickle", "rb"
+    "/kaggle/input/train_data/feature_select.pickle", "rb"
 ) as f:
     feature_select = pickle.load(f)
     

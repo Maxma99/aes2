@@ -43,7 +43,7 @@ import pickle
 import torch
 
 
-_test = pd.read_csv("kaggle/input/learning-agency-lab-automated-essay-scoring-2/test.csv")
+_test = pd.read_csv("/home/mcq/GitHub/aes2/kaggle/input/learning-agency-lab-automated-essay-scoring-2/test.csv")
 # ENABLE_DONT_WASTE_YOUR_RUN_TIME = len(_test) < 10
 ENABLE_DONT_WASTE_YOUR_RUN_TIME = False
 if ENABLE_DONT_WASTE_YOUR_RUN_TIME:
@@ -95,8 +95,8 @@ import torch
 from scipy.special import softmax
 
 MAX_LENGTH = 1024
-TEST_DATA_PATH = "kaggle/input/learning-agency-lab-automated-essay-scoring-2/test.csv"
-MODEL_PATH = 'kaggle/input/aes2-400-20240419134941/*/*'
+TEST_DATA_PATH = "/home/mcq/GitHub/aes2/kaggle/input/learning-agency-lab-automated-essay-scoring-2/test.csv"
+MODEL_PATH = '/home/mcq/GitHub/aes2/kaggle/input/aes2-400-20240419134941/*/*'
 EVAL_BATCH_SIZE = 1
 
 
@@ -502,7 +502,7 @@ columns = [
         pl.col("full_text").str.split(by="\n\n").alias("paragraph")
     ),
 ]
-PATH = "kaggle/input/learning-agency-lab-automated-essay-scoring-2/"
+PATH = "/home/mcq/GitHub/aes2/kaggle/input/learning-agency-lab-automated-essay-scoring-2/"
 paragraph_fea = ['paragraph_len','paragraph_sentence_cnt','paragraph_word_cnt']
 paragraph_fea2 = ['paragraph_error_num'] + paragraph_fea
 
@@ -538,7 +538,7 @@ vectorizer_cnt = CountVectorizer(
 vectorizer_cnt.fit([i for i in train['full_text']])
 
 nlp = spacy.load("en_core_web_sm")
-with open('kaggle/input/english-word-hx/words.txt', 'r') as file:
+with open('/home/mcq/GitHub/aes2/kaggle/input/english-word-hx/words.txt', 'r') as file:
     english_vocab = set(word.strip().lower() for word in file)
 
 # Display the first sample data in the training set
@@ -598,7 +598,7 @@ if __name__ == "__main__":
     train_feats.head(3)
 
     # add Deberta predictions to LGBM as features
-    deberta_oof = joblib.load('kaggle/input/aes2-400-20240419134941/oof.pkl')
+    deberta_oof = joblib.load('/home/mcq/GitHub/aes2/kaggle/input/aes2-400-20240419134941/oof.pkl')
     print(deberta_oof.shape, train_feats.shape)
 
     for i in range(6):
@@ -615,7 +615,7 @@ if __name__ == "__main__":
 
     train_feats = pd.merge(train_feats, fb_oof, left_on="essay_id", right_on="text_id").drop("text_id", axis=1)
     feature_names += list(fb_oof.columns.drop("text_id"))
-    train_feats_argument = pd.read_pickle('kaggle/input/argument-feat.pkl')
+    train_feats_argument = pd.read_pickle('/home/mcq/GitHub/aes2/kaggle/input/argument-feat.pkl')
     for i in range(2):
         train_feats[f'argument_{i}'] = train_feats_argument.iloc[:, i]
     # Converting the 'text' column to string type and assigning to X
@@ -632,7 +632,7 @@ if __name__ == "__main__":
     callbacks = [log_evaluation(period=25), early_stopping(stopping_rounds=75,first_metric_only=True)]
 
     if ENABLE_DONT_WASTE_YOUR_RUN_TIME and False:
-        with open("kaggle/input/aes2-cache/feature_select.pickle", "rb") as f:
+        with open("/home/mcq/GitHub/aes2/kaggle/input/aes2-cache/feature_select.pickle", "rb") as f:
             feature_select = pickle.load(f)
     else:
         feature_select = feature_select_wrapper()
@@ -736,7 +736,7 @@ def infer(test_feats, models):
     # Print the predictions
     print(predictions)
 
-    submission = pd.read_csv("kaggle/input/learning-agency-lab-automated-essay-scoring-2/sample_submission.csv")
+    submission = pd.read_csv("/home/mcq/GitHub/aes2/kaggle/input/learning-agency-lab-automated-essay-scoring-2/sample_submission.csv")
     submission['score'] = predictions
     submission['score'] = submission['score'].astype(int)
     submission.to_csv("submission.csv", index=None)
