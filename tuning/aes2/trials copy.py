@@ -5,6 +5,9 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, f1_score, cohen_kappa_score
 # from aes2_added_fb_prize_as_features_preprocessing import *
+import keras_nlp # 0.9.3
+import kears # 3.2.1
+import tensorflow # 2.15.0
 import nni
 import xgboost as xgb
 import lightgbm as lgb
@@ -47,7 +50,6 @@ def get_default_parameters():
         'n_splits' : 15,
         'ratio' : 0.749,
         'learning_rate_lgb' : 0.05 ,
-        'gpu_id': 4,
         'max_depth_lgb' : 8 ,
         'num_leaves_lgb' : 10 ,
         'colsample_bytree_lgb' : 0.3 ,
@@ -124,7 +126,80 @@ class Predictor:
         return predicted
 
 
-
+class WeightedKappa(keras.metrics.Metric): 
+    def __init__(self, num_classes=6, epsilon=1e-6): 
+        super().__init__(name="weighted_kappa") 
+        self.num_classes = num_classes 
+        self.epsilon = epsilon 
+ 
+        label_vec = keras.ops.arange(num_classes, dtype=keras.backend.floatx()) 
+        self.row_label_vec = keras.ops.reshape(label_vec, [1, num_classes]) 
+        self.col_label_vec = keras.ops.reshape(label_vec, [num_classes, 1]) 
+        col_mat = keras.ops.tile(self.col_label_vec, [1, num_classes]) 
+        row_mat = keras.ops.tile(self.row_label_vec, [num_classes, 1]) 
+        self.weight_mat = (col_mat - row_mat) ** 2 
+ 
+        self.numerator = self.add_weight(name="numerator", initializer="zeros") 
+        self.denominator = self.add_weight(name="denominator", initializer="zeros") 
+ 
+        # +++ 
+        self.o_sum = self.add_weight(name = 'o_sum', initializer = 'zeros') 
+        self.e_sum = self.add_weight(name = 'e_sum', initializer = 'zeros') 
+        # +++ 
+ 
+    def update_state(self, y_true, y_pred, **args): 
+        # revert ordinal regression labels to classification labels 
+        y_true = keras.ops.one_hot(keras.ops.sum(keras.ops.cast(y_true, dtype="int8"), axis=-1) - 1, 6) 
+        y_pred = keras.ops.one_hot( 
+            keras.ops.sum(keras.ops.cast(y_pred > 0.5, dtype="int8"), axis=-1) - 1, 6 
+        ) 
+        # weighted kappa calculation 
+        y_true = keras.ops.cast(y_true, dtype=self.col_label_vec.dtype) 
+        y_pred = keras.ops.cast(y_pred, dtype=self.weight_mat.dtype) 
+        batch_size = keras.ops.shape(y_true)[0] 
+ 
+        cat_labels = keras.ops.matmul(y_true, self.col_label_vec) 
+        cat_label_mat = keras.ops.tile(cat_labels, [1, self.num_classes]) 
+        row_label_mat = keras.ops.tile(self.row_label_vec, [batch_size, 1]) 
+ 
+        weight = (cat_label_mat - row_label_mat) ** 2 
+ 
+        self.numerator.assign_add(keras.ops.sum(weight * y_pred)) 
+        label_dist = keras.ops.sum(y_true, axis=0, keepdims=True) 
+        pred_dist = keras.ops.sum(y_pred, axis=0, keepdims=True) 
+        w_pred_dist = keras.ops.matmul( 
+            self.weight_mat, keras.ops.transpose(pred_dist, [1, 0]) 
+        ) 
+        self.denominator.assign_add( 
+            keras.ops.sum(keras.ops.matmul(label_dist, w_pred_dist)) 
+        ) 
+ 
+        # +++ 
+        self.o_sum.assign_add(keras.ops.sum(y_pred)) 
+        self.e_sum.assign_add(keras.ops.sum( 
+            keras.ops.matmul(keras.ops.transpose(label_dist, [1, 0]), pred_dist) 
+        )) 
+        # +++ 
+ 
+    def result(self): 
+        # --- 
+        # return 1.0 - keras.ops.divide_no_nan(self.numerator, self.denominator) 
+        # --- 
+        # +++ 
+        return 1.0 - ( 
+            keras.ops.divide_no_nan(self.numerator, self.denominator) 
+            * keras.ops.divide_no_nan(self.e_sum, self.o_sum) 
+        ) 
+        # +++ 
+ 
+    def reset_state(self): 
+        self.numerator.assign(0) 
+        self.denominator.assign(0) 
+ 
+        # +++ 
+        self.o_sum.assign(0) 
+        self.e_sum.assign(0) 
+        # +++
 
 
 
@@ -211,7 +286,7 @@ def run_experiment(tuner_params):
             class_weight='balanced',
             tree_method="gpu_hist",
             # device="gpu" if CUDA_AVAILABLE else "cpu",
-            gpu_id = int(tuner_params['gpu_id'])
+            gpu_id = 7
         #             device='gpu',
         #             verbosity = 1
         )
@@ -242,7 +317,10 @@ def run_experiment(tuner_params):
         f1_scores.append(f1_fold)
 
         # Calculate and store the Cohen's kappa score for this fold
-        kappa_fold = cohen_kappa_score(y_test_fold_int, predictions_fold, weights='quadratic')
+        # kappa_fold = cohen_kappa_score(y_test_fold_int, predictions_fold, weights='quadratic')
+        metric = WeightedKappa
+        metric.update_state(y_true=y_test_fold_int, y_pred=predictions_fold)
+        kappa_fold = metric.result()
         nni.report_intermediate_result(kappa_fold)
         kappa_scores.append(kappa_fold)
 

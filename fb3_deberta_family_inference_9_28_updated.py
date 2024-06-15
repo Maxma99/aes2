@@ -66,10 +66,10 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # * CFG1 : 10 fold deberta-v3-base CV/LB: 0.4595/0.44
 # * CFG2 : 10 fold deberta-v3-large CV/LB: 0.4553/0.44
 # * CFG3 : 10 fold deberta-v2-xlarge CV/LB: 0.4604/0.44
-# * CFG4 : 10 fold deberta-v3-base FGM CV/LB: 0.4590/0.44
+# * CFG4 : 10 fold deberta-v3-base FGM CV/LB: 0.4590/0.44 ~~~~
 # * CFG5 : 10 fold deberta-v3-large FGM CV/LB: 0.4564/0.44
 # * CFG6 : 10 fold deberta-v2-xlarge CV/LB: 0.4666/0.44
-# * CFG7 : 10 fold deberta-v2-xlarge-mnli CV/LB: 0.4675/0.44
+# * CFG7 : 10 fold deberta-v2-xlarge-mnli CV/LB: 0.4675/0.44 ~~~~
 # * CFG8 : 10 fold deberta-v3-large unscale CV/LB: 0.4616/0.43
 # * CFG9 : 10 fold deberta-v3-large unscale CV/LB: 0.4548/0.43
 # * CFG10 : 10 fold deberta-v3-large unscale CV/LB: 0.4569/0.43
@@ -122,20 +122,20 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #     num_workers=4
 #     weight = 1.0
 
-# class CFG4:
-#     model = "microsoft/deberta-v3-base"
-#     path = "../input/0913-deberta-v3-base-fgm/"
-#     base = "../input/fb3models/microsoft-deberta-v3-base/"
-#     config_path = base + "config/config.json"
-#     tokenizer = AutoTokenizer.from_pretrained(base + 'tokenizer/')
-#     gradient_checkpointing=False
-#     batch_size=24
-#     target_cols=['cohesion', 'syntax', 'vocabulary', 'phraseology', 'grammar', 'conventions']
-#     seed=42
-#     n_fold=10
-#     trn_fold=list(range(n_fold))
-#     num_workers=4
-#     weight = 1.0
+class CFG4:
+    model = "microsoft/deberta-v3-base"
+    path = "/home/mcq/GitHub/aes2/kaggle/input/fb3models/0913-deberta-v3-base-FGM/"
+    base = "/home/mcq/GitHub/aes2/kaggle/input/fb3models/microsoft-deberta-v3-base/"
+    config_path = base + "config.json"
+    tokenizer = AutoTokenizer.from_pretrained(base)
+    gradient_checkpointing=False
+    batch_size=24
+    target_cols=['cohesion', 'syntax', 'vocabulary', 'phraseology', 'grammar', 'conventions']
+    seed=42
+    n_fold=10
+    trn_fold=list(range(n_fold))
+    num_workers=4
+    weight = 1.0
     
 # class CFG5:
 #     model = "microsoft/deberta-v3-large"
@@ -167,20 +167,20 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #     num_workers=4
 #     weight = 1.0
     
-# class CFG7:
-#     model = "microsoft/deberta-v2-xlarge-mnli"
-#     path = "../input/0919-deberta-v2-xlarge-mnli/"
-#     base = "../input/fb3models/microsoft-deberta-v2-xlarge/"
-#     config_path = base + "config/config.json"
-#     tokenizer = AutoTokenizer.from_pretrained(base + 'tokenizer/')
-#     gradient_checkpointing=False
-#     batch_size=4
-#     target_cols=['cohesion', 'syntax', 'vocabulary', 'phraseology', 'grammar', 'conventions']
-#     seed=42
-#     n_fold=10
-#     trn_fold=list(range(n_fold))
-#     num_workers=4
-#     weight = 1.0
+class CFG7:
+    model = "microsoft/deberta-v2-xlarge-mnli"
+    path = "/home/mcq/GitHub/aes2/kaggle/input/fb3models/0919-deberta-v2-xlarge-mnli/"
+    base = "/home/mcq/GitHub/aes2/kaggle/input/fb3models/microsoft-deberta-v2-xlarge/"
+    config_path = base + "config.json"
+    tokenizer = AutoTokenizer.from_pretrained(base)
+    gradient_checkpointing=False
+    batch_size=4
+    target_cols=['cohesion', 'syntax', 'vocabulary', 'phraseology', 'grammar', 'conventions']
+    seed=42
+    n_fold=10
+    trn_fold=list(range(n_fold))
+    num_workers=4
+    weight = 1.0
     
 # class CFG8:
 #     model = "microsoft/deberta-v3-large"
@@ -214,8 +214,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
 class CFG10:
     model = "microsoft/deberta-v3-large"
-    path = "/home/mcq/GitHub/aes2/kaggle/input/0927-deberta-v3-large-unscale/"
-    base = "/home/mcq/GitHub/aes2/kaggle/input/microsoft-deberta-v3-large/"
+    path = "/home/mcq/GitHub/aes2/kaggle/input/fb3models/0927-deberta-v3-large-unscale/"
+    base = "/home/mcq/GitHub/aes2/kaggle/input/fb3models/microsoft-deberta-v3-large/"
     config_path = base + "config.json"
     # tokenizer = AutoTokenizer.from_pretrained(base + 'tokenizer/')
     tokenizer = AutoTokenizer.from_pretrained(base)
@@ -230,7 +230,7 @@ class CFG10:
     
 CFG_list = [CFG10]
 
-
+# CFG4, CFG7,
 # # Utils
 
 # In[ ]:
@@ -506,7 +506,7 @@ def predict(test: pd.DataFrame) -> pd.DataFrame:
 
 if __name__ == "__main__":
     test = pd.read_csv(
-            '/kaggle/input/learning-agency-lab-automated-essay-scoring-2/train.csv'
+            'kaggle/input/learning-agency-lab-automated-essay-scoring-2/train.csv'
     ).rename(columns={"essay_id": "text_id"})
     submission = predict(test)
     submission.to_csv(f'submission.csv', index=False)

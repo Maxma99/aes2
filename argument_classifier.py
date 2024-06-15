@@ -70,7 +70,7 @@ from scipy.special import softmax
 # %%
 import spacy
 nlp = spacy.load("en_core_web_sm")
-with open('/kaggle/input/english-word-hx/words.txt', 'r') as file:
+with open('kaggle/input/english-word-hx/words.txt', 'r') as file:
     english_vocab = set(word.strip().lower() for word in file)
 
 # %% [markdown]
@@ -90,8 +90,8 @@ columns = [
         pl.col("full_text").str.split(by="\n\n").alias("paragraph")
     ),
 ]
-PATH = "/kaggle/input/learning-agency-lab-automated-essay-scoring-2/"
-TEST_DATA_PATH = "/kaggle/input/learning-agency-lab-automated-essay-scoring-2/train.csv"
+PATH = "/home/mcq/GitHub/aes2/kaggle/input/learning-agency-lab-automated-essay-scoring-2"
+TEST_DATA_PATH = "/home/mcq/GitHub/aes2/kaggle/input/learning-agency-lab-automated-essay-scoring-2/train.csv"
 MAX_LENGTH = 1024
 EVAL_BATCH_SIZE = 1
 
@@ -101,21 +101,21 @@ EVAL_BATCH_SIZE = 1
 
 # %%
 # Load model directlyfrom transformers import AutoTokenizer, AutoModelForSequenceClassification
-tokenizer = AutoTokenizer.from_pretrained("/kaggle/input/argument-classifier")
-model = AutoModelForSequenceClassification.from_pretrained("/kaggle/input/argument-classifier")
+tokenizer = AutoTokenizer.from_pretrained("/home/mcq/GitHub/aes2/kaggle/input/argument-classifier")
+model = AutoModelForSequenceClassification.from_pretrained("/home/mcq/GitHub/aes2/kaggle/input/argument-classifier")
 
 # %%
-PATH = 'kaggle/input/learning-agency-lab-automated-essay-scoring-2/'
+PATH = '/home/mcq/GitHub/aes2/kaggle/input/learning-agency-lab-automated-essay-scoring-2/'
 
 train = pl.read_csv(PATH + "train.csv").with_columns(columns) 
 test = pl.read_csv(PATH + "test.csv").with_columns(columns)
 
 def predict_chunk(train: pd.DataFrame) -> pd.DataFrame:
-    # def cut(tmp):   
-    #     tmp = tmp.with_columns(pl.col('full_text').str.slice(0, 513).alias("cut"))
-    #     return tmp
     def cut(tmp):
-        tmp['cut'] = tmp['full_text'].str.slice(0, 513)
+        if isinstance(tmp, pd.DataFrame):
+            tmp['cut'] = tmp['full_text'].str.slice(0, 513)
+        else:
+            tmp = tmp.with_columns(pl.col('full_text').str.slice(0, 513).alias("cut"))
         return tmp
     # train = pl.from_pandas(train_pd)
 
@@ -141,15 +141,15 @@ def predict_chunk(train: pd.DataFrame) -> pd.DataFrame:
     ds = Dataset.from_pandas(df).map(tokenize).remove_columns(['cut'])
     preds = trainer.predict(ds).predictions
 
-    predictions = []
-    predictions.append(softmax(preds, axis=-1))
-
-    print(predictions)
-    predictions_2d = np.array(predictions)
-    predictions_df2d = predictions_2d.reshape(-1, predictions_2d.shape[-1])
-    predictions_df2d.shape
-    predictions_df = pd.DataFrame(predictions_df2d)
-    # predictions_df.to_pickle('kaggle/input/argument-feat.pkl')
+    predictions = pd.DataFrame(softmax(preds, axis=-1))
+    predictions.iloc[:, 0] = predictions.iloc[:, 0] * 5 + 1
+    predictions.iloc[:, 1] = predictions.iloc[:, 1] * (-5) - 1
     torch.cuda.empty_cache()
     gc.collect()
-    return predictions_df
+    return predictions
+
+if __name__ == "__main__":
+    submission = predict_chunk(train)
+    submission.to_pickle('/home/mcq/GitHub/aes2/train_data/argument-feat.pkl')
+    submission.head(3)
+
