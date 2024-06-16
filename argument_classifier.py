@@ -142,8 +142,8 @@ def predict_chunk(train: pd.DataFrame) -> pd.DataFrame:
     preds = trainer.predict(ds).predictions
 
     predictions = pd.DataFrame(softmax(preds, axis=-1))
-    predictions.iloc[:, 0] = predictions.iloc[:, 0] * 5 + 1
-    predictions.iloc[:, 1] = predictions.iloc[:, 1] * (-5) - 1
+    # predictions.iloc[:, 0] = predictions.iloc[:, 0] * 5 + 1
+    # predictions.iloc[:, 1] = predictions.iloc[:, 1] * (-5) - 1
     torch.cuda.empty_cache()
     gc.collect()
     return predictions
