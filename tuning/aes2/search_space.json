@@ -1,15 +1,11 @@
 {
     "gpu_id":{
       "_type": "quniform",
-      "_value": [5, 8, 1]
+      "_value": [4, 7, 1.1]
     },
     "ratio":{
       "_type": "quniform",
       "_value": [0, 1, 0.01]
-    },
-    "learning_rate_lgb": {
-        "_type": "loguniform",
-        "_value": [0.01, 0.3]
     },
     "max_depth_lgb": {
         "_type": "choice",
@@ -19,25 +15,13 @@
         "_type": "choice",
         "_value": [20, 31, 40, 50, 60]
     },
-    "colsample_bytree_lgb": {
-        "_type": "uniform",
-        "_value": [0.5, 1.0]
-    },
     "reg_alpha_lgb": {
-        "_type": "uniform",
-        "_value": [0.0, 1.0]
+        "_type": "quniform",
+        "_value": [0.0, 1.0, 0.05]
     },
     "reg_lambda_lgb": {
-        "_type": "uniform",
-        "_value": [0.0, 1.0]
-    },
-    "n_estimators_lgb": {
-        "_type": "choice",
-        "_value": [100, 200, 300, 500, 700, 1000]
-    },
-    "learning_rate_xgb": {
-        "_type": "loguniform",
-        "_value": [0.01, 0.3]
+        "_type": "quniform",
+        "_value": [0.0, 1.0, 0.05]
     },
     "max_depth_xgb": {
         "_type": "choice",
@@ -47,21 +31,13 @@
         "_type": "choice",
         "_value": [20, 31, 40, 50, 60]
     },
-    "colsample_bytree_xgb": {
-        "_type": "uniform",
-        "_value": [0.5, 1.0]
-    },
     "reg_alpha_xgb": {
-        "_type": "uniform",
-        "_value": [0.0, 1.0]
+        "_type": "quniform",
+        "_value": [0.0, 1.0, 0.05]
     },
     "reg_lambda_xgb": {
-        "_type": "uniform",
-        "_value": [0.0, 1.0]
-    },
-    "n_estimators_xgb": {
-        "_type": "choice",
-        "_value": [100, 200, 300, 500, 700, 1000]
+        "_type": "quniform",
+        "_value": [0.0, 1.0, 0.05]
     },
     "n_splits": {
       "_type": "quniform",

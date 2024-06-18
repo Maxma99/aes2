@@ -44,25 +44,18 @@ gc.collect()
 
 def get_default_parameters():
     params = {
-        'n_splits' : 15,
-        'ratio' : 0.749,
-        'learning_rate_lgb' : 0.05 ,
         'gpu_id': 4,
+        'ratio' : 0.749,
         'max_depth_lgb' : 8 ,
         'num_leaves_lgb' : 10 ,
-        'colsample_bytree_lgb' : 0.3 ,
         'reg_alpha_lgb' : 0.7 ,
         'reg_lambda_lgb' : 0.1 ,
-        'n_estimators_lgb' : 700 ,
-        'learning_rate_xgb' : 0.1 ,
         'max_depth_xgb' : 8 ,
         'num_leaves_xgb' : 10 ,
-        'colsample_bytree_xgb' : 0.5 ,
         'reg_alpha_xgb' : 0.1 ,
-        'reg_lambda_xgb' : 0.8 ,
-        'n_estimators_xgb' : 1024,
-        "feature_fraction": 0.5
+        'reg_lambda_xgb' : 0.8
     }
+
     return params
 
 def clean_feature_names(features):
@@ -134,19 +127,28 @@ def run_experiment(tuner_params):
     predictions = []
     f1_scores = []
     kappa_scores = []
+    params = {
+        'n_splits' : 15,
+        'learning_rate_lgb' : 0.05 ,
+        'colsample_bytree_lgb' : 0.3 ,
+        'n_estimators_lgb' : 700, 
+        'learning_rate_xgb' : 0.1 ,
+        'colsample_bytree_xgb' : 0.5 ,
+        'n_estimators_xgb' : 1024
+    }
 
     print('......DATA LOADING......')
     import pickle
-    with open("/home/mcq/GitHub/aes2/tuning/aes2/train_data/train_feats.pickle", "rb") as f:
+    with open("/home/mcq/GitHub/aes2/train_data/train_feats.pickle", "rb") as f:
         train_feats = pickle.load(f)
-    with open("/home/mcq/GitHub/aes2/tuning/aes2/train_data/X.pickle", "rb") as f:
+    with open("/home/mcq/GitHub/aes2/train_data/X.pickle", "rb") as f:
         X = pickle.load(f)
-    with open("/home/mcq/GitHub/aes2/tuning/aes2/train_data/y.pickle", "rb") as f:
+    with open("/home/mcq/GitHub/aes2/train_data/y.pickle", "rb") as f:
         y = pickle.load(f)
-    with open("/home/mcq/GitHub/aes2/tuning/aes2/train_data/y_split.pickle", "rb") as f:
+    with open("/home/mcq/GitHub/aes2/train_data/y_split.pickle", "rb") as f:
         y_split = pickle.load(f)
     with open(
-        "/home/mcq/GitHub/aes2/tuning/aes2/train_data/feature_select.pickle", "rb"
+        "/home/mcq/GitHub/aes2/train_data/feature_select.pickle", "rb"
     ) as f:
         feature_select = pickle.load(f)
         
@@ -164,13 +166,13 @@ def run_experiment(tuner_params):
         light = lgb.LGBMRegressor(
                 objective = qwk_obj,
                 metrics = 'None',
-                learning_rate = tuner_params['learning_rate_lgb'],
+                learning_rate = params['learning_rate_lgb'],
                 max_depth = int(tuner_params['max_depth_lgb']),
                 num_leaves = int(tuner_params['num_leaves_lgb']),
-                colsample_bytree=tuner_params['colsample_bytree_lgb'],
+                colsample_bytree=params['colsample_bytree_lgb'],
                 reg_alpha = tuner_params['reg_alpha_lgb'],
                 reg_lambda = tuner_params['reg_lambda_lgb'],
-                n_estimators=int(tuner_params['n_estimators_lgb']),
+                n_estimators=int(params['n_estimators_lgb']),
                 feature_fraction=1.0,
                 random_state=42,
                 extra_trees=True,
@@ -199,13 +201,13 @@ def run_experiment(tuner_params):
         xgb_regressor = xgb.XGBRegressor(
             objective = qwk_obj,
             metrics = 'None',
-            learning_rate = tuner_params['learning_rate_xgb'],
+            learning_rate = params['learning_rate_xgb'],
             max_depth = int(tuner_params['max_depth_xgb']),
             num_leaves = int(tuner_params['num_leaves_xgb']),
-            colsample_bytree=tuner_params['colsample_bytree_xgb'],
+            colsample_bytree=params['colsample_bytree_xgb'],
             reg_alpha = tuner_params['reg_alpha_xgb'],
             reg_lambda = tuner_params['reg_lambda_xgb'],
-            n_estimators=int(tuner_params['n_estimators_xgb']),
+            n_estimators=int(params['n_estimators_xgb']),
             random_state=42,
             extra_trees=True,
             class_weight='balanced',
