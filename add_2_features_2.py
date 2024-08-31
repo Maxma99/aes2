@@ -1,6 +1,8 @@
 # %%
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "3,4,5,6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"  # 指定使用 GPU 3
+
+# %%
 import gc
 import lightgbm as lgb
 from sklearn.ensemble import VotingRegressor
@@ -8,7 +10,6 @@ import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 import re
 import spacy
-import math
 import string
 import random
 from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
@@ -29,39 +30,20 @@ import joblib
 import tensorflow_hub as hub
 import tensorflow as tf
 import statistics
+import math
 
 
 PATH = "kaggle/input/learning-agency-lab-automated-essay-scoring-2/"
 train = pd.read_csv(PATH + "train.csv")
 
+embed = hub.load("https://www.kaggle.com/models/google/universal-sentence-encoder/TensorFlow2/universal-sentence-encoder/2")
+
+
+sentence_encoder = hub.KerasLayer(embed)
+
+
+
 def predict_chunk(train: pd.DataFrame) -> pd.DataFrame:
-
-
-    embed = hub.load("https://www.kaggle.com/models/google/universal-sentence-encoder/TensorFlow2/universal-sentence-encoder/2")
-
-    sentence_encoder = hub.KerasLayer(embed)
-
-    def use_function(corpus, column_name):
-
-        sencode_corpus = []
-        for x in corpus[column_name]:
-
-            if len(x.split('.'))<2:
-                sencode_essay = [0.]*512
-
-            else:
-                enc_raw = sentence_encoder(x.split('.'))[:-1]
-                sencode_essay = tf.math.reduce_sum(enc_raw, 0).numpy()/math.sqrt(len(x.split('.')))
-
-        sencode_corpus.append(sencode_essay)
-
-        return sencode_corpus
-    
-    # predictions.iloc[:, 0] = predictions.iloc[:, 0] * 5 + 1
-    # predictions.iloc[:, 1] = predictions.iloc[:, 1] * (-5) - 1
-
-
-
     # train
     corpus = train
     column_name = 'full_text'
@@ -72,14 +54,52 @@ def predict_chunk(train: pd.DataFrame) -> pd.DataFrame:
     sencode.columns = sencode_columns
     # Merge the newly generated feature data with the previously generated feature data
     sencode['essay_id'] = train['essay_id']
-    #train = train.merge(sencode, on='essay_id', how='left')
+    train = train.merge(sencode, on='essay_id', how='left')
+    train = train.drop(columns = ['essay_id', 'full_text','score'])
 
-    return sencode
+    return train
 
 
 
 def predict_chunk_2(train: pd.DataFrame) -> pd.DataFrame:
+    #Features engineering
+#Preprocessing
 
+    def removeHTML(x):
+        html=re.compile(r'<.*?\n>')
+        return html.sub(r'',x)
+
+    def dataPreprocessing(x):
+        # lowercase
+        x = x.lower()
+        # Remove HTML
+        x = removeHTML(x)
+        # Delete strings starting with @
+        x = re.sub("@\w+", '',x)
+        # Delete Numbers
+        x = re.sub("'\d+", '',x)
+        x = re.sub("\d+", '',x)
+        # Delete URL
+        x = re.sub("http\w+", '',x)
+        # Replace consecutive empty spaces with a single space character
+        x = re.sub(r"\s+", " ", x)
+        # Replace consecutive commas and periods with one comma and period character
+        x = re.sub(r"\.+", ".", x)
+        x = re.sub(r"\,+", ",", x)
+        # Delete aposhtroph html
+        #x = re.sub(r"\\'", "'", x)
+        # Remove empty characters at the beginning and end
+        x = x.strip()
+        return x
+
+    # Paragraph preprocessing
+    train['paragraph_processed'] = [dataPreprocessing(x) for x in train['full_text']]
+
+    # Calculate total number of sentences
+    train['sentence_cnt'] = [len(x.split('.')) for x in train['paragraph_processed']]
+
+    # Calculate total number of words
+    train['word_cnt'] = [len(x.split(' ')) for x in train['paragraph_processed']]
 
     def corpus_satistics(data, col, heading_len, split_str, corp_unit):
         corp_unit_len_min = []
@@ -159,6 +179,8 @@ def predict_chunk_2(train: pd.DataFrame) -> pd.DataFrame:
     split_str = '.'
     corp_unit = 'word'
     train = corpus_satistics(data, col, heading_len, split_str, corp_unit)
+
+    train = train.drop(columns = ['essay_id', 'full_text','score'])
     return train
 
 
@@ -167,11 +189,27 @@ def predict_chunk_2(train: pd.DataFrame) -> pd.DataFrame:
 
 # %%
 if __name__ == "__main__":
+    
+    sencode_corpus = []
+    def use_function(corpus, column_name):        
+        
+        for x in corpus[column_name]:
+      
+            if len(x.split('.'))<2:
+                sencode_essay = [0.]*512
+
+            else:
+                enc_raw = sentence_encoder(x.split('.'))[:-1]
+                sencode_essay = tf.math.reduce_sum(enc_raw, 0).numpy()/math.sqrt(len(x.split('.')))
+
+            sencode_corpus.append(sencode_essay)
+        return sencode_corpus
+
+
     submission_1 = predict_chunk(train)
-    submission_2 = predict_chunk_2(train)
-    submission = pd.concat([submission_1, submission_2], axis=1)
-    submission.to_pickle('/home/mcq/GitHub/aes2/train_data/add2-feat.pkl')
-    submission.head(3)
+    # submission_2 = predict_chunk_2(train)
+    submission_1.to_pickle('/home/mcq/GitHub/aes2/train_data/add2-feat.pkl')
+    #submission.head(3)
 
 
 

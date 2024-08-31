@@ -1,13 +1,13 @@
-experimentName: lgbm_xgboost_aes2
-trialConcurrency: 4
+experimentName: lgbm_xgboost_aes2_groupfold_ex
+trialConcurrency: 6
 maxTrialNumber: 100
 searchSpaceFile: search_space.json
 tuner:
-  name: GridSearch
+  name: Anneal
   classArgs:
     optimize_mode: maximize
-trialCommand: python /home/mcq/GitHub/aes2/tuning/aes2/trials.py
-trialCodeDirectory: /home/mcq/GitHub/aes2/tuning/aes2
+trialCommand: python /home/mcq/GitHub/aes2/tuning/aes2_groupfold_ex/trials.py
+trialCodeDirectory: /home/mcq/GitHub/aes2/tuning/aes2_groupfold_ex
 trainingService:  # For other platforms, check mnist-pytorch example
   platform: local
 # localConfig:

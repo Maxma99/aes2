@@ -35,7 +35,9 @@ import polars as pl
 import joblib
 LOG = logging.getLogger('aes2')
 sys.path.append('/home/mcq/GitHub/aes2/')
-
+sys.path.append('/home/mcq/GitHub/aes2/topic-classificatio')
+import numpy as np
+from sklearn.model_selection import GroupKFold
 import aes2_added_fb_prize_as_features_preprocessing
 # %%
 import gc
@@ -44,15 +46,15 @@ gc.collect()
 
 def get_default_parameters():
     params = {
-        'gpu_id': 4,
+        'gpu_id': 0,
         'ratio' : 0.5,
         # 'max_depth_lgb' : 8 ,
         # 'num_leaves_lgb' : 10 ,
-        # 'reg_alpha_lgb' : 0.7 ,
-        # 'reg_lambda_lgb' : 0.1 ,
+        'reg_alpha_lgb' : 0,
+        'reg_lambda_lgb' : 0 ,
         # 'max_depth_xgb' : 8 ,
         # 'num_leaves_xgb' : 10 ,
-        # 'reg_alpha_xgb' : 0.1 ,
+        'reg_alpha_xgb' : 0.1 ,
         'reg_lambda_xgb' : 0
     }
 
@@ -128,7 +130,7 @@ def run_experiment(tuner_params):
     f1_scores = []
     kappa_scores = []
     params = {
-        'n_splits' : 15,
+        'n_splits' : 7,
         'learning_rate_lgb' : 0.05 ,
         'colsample_bytree_lgb' : 0.3 ,
         'n_estimators_lgb' : 700, 
@@ -138,11 +140,11 @@ def run_experiment(tuner_params):
         # 'ratio' : 0.749,
         'max_depth_lgb' : 8 ,
         'num_leaves_lgb' : 10 ,
-        'reg_alpha_lgb' : 0.7 ,
-        'reg_lambda_lgb' : 0.1 ,
+        # 'reg_alpha_lgb' : 0.7 ,
+        # 'reg_lambda_lgb' : 0.1 ,
         'max_depth_xgb' : 8 ,
-        'num_leaves_xgb' : 10 ,
-        'reg_alpha_xgb' : 0.1
+        'num_leaves_xgb' : 10 
+        # 'reg_alpha_xgb' : 0.1
     }
     n_splits = int(params['n_splits'])
     print('......DATA LOADING......')
@@ -159,13 +161,17 @@ def run_experiment(tuner_params):
         "/home/mcq/GitHub/aes2/train_data/feature_select.pkl", "rb"
     ) as f:
         feature_select = pickle.load(f)
-        
+    with open(
+        "/home/mcq/GitHub/aes2/train_data/category-feat.pkl", "rb"
+    ) as f:
+        topic = pickle.load(f)
     aes2_added_fb_prize_as_features_preprocessing.feature_select = feature_select
     train_feats.columns = clean_feature_names(train_feats.columns)
     feature_select = clean_feature_names(feature_select)
+    groups = topic['topic']
     X = train_feats[feature_select].astype(np.float32).values
-    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
-    for i, (train_index, test_index) in enumerate(skf.split(X, y_split), 1):
+    group_kfold = GroupKFold(n_splits=n_splits)
+    for i, (train_index, test_index) in enumerate(group_kfold.split(X, y_split,groups), 1):
     # Split the data into training and testing sets for this fold
         print('fold',i)
         X_train_fold, X_test_fold = X[train_index], X[test_index]
@@ -178,8 +184,8 @@ def run_experiment(tuner_params):
                 max_depth = int(params['max_depth_lgb']),
                 num_leaves = int(params['num_leaves_lgb']),
                 colsample_bytree=params['colsample_bytree_lgb'],
-                reg_alpha = params['reg_alpha_lgb'],
-                reg_lambda = params['reg_lambda_lgb'],
+                reg_alpha = tuner_params['reg_alpha_lgb'],
+                reg_lambda = tuner_params['reg_lambda_lgb'],
                 n_estimators=int(params['n_estimators_lgb']),
                 feature_fraction=1.0,
                 random_state=42,
@@ -213,7 +219,7 @@ def run_experiment(tuner_params):
             max_depth = int(params['max_depth_xgb']),
             num_leaves = int(params['num_leaves_xgb']),
             colsample_bytree=params['colsample_bytree_xgb'],
-            reg_alpha = params['reg_alpha_xgb'],
+            reg_alpha = tuner_params['reg_alpha_xgb'],
             reg_lambda = tuner_params['reg_lambda_xgb'],
             n_estimators=int(params['n_estimators_xgb']),
             random_state=42,

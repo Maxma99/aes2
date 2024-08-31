@@ -160,12 +160,12 @@ def get_fb3_predicted(df_test = None):
 
     if df_test is None:
         df_test = pd.read_csv(TEST_DATA_PATH)
-    # if len(df_test) < 10:
-    #     fb3_predicted = fb3_deberta_family_inference_9_28_updated.predict_chunk(
-    #         df_test.rename(columns={"essay_id": "text_id"})
-    #     )
-    # else:
-    fb3_predicted = fb3_deberta_family_inference_9_28_updated.predict(
+    if len(df_test) < 10:
+        fb3_predicted = fb3_deberta_family_inference_9_28_updated.predict_chunk(
+            df_test.rename(columns={"essay_id": "text_id"})
+        )
+    else:
+        fb3_predicted = fb3_deberta_family_inference_9_28_updated.predict(
         df_test.rename(columns={"essay_id": "text_id"})
     )
     return fb3_predicted
@@ -665,6 +665,7 @@ if __name__ == "__main__":
 def preprocess_test(test: pl.DataFrame| None = None) -> pd.DataFrame:
     
     import argument_classifier
+    # import added_features
     
     if test is None:
         test = pl.read_csv(PATH + "test.csv").with_columns(columns)
@@ -707,6 +708,7 @@ def preprocess_test(test: pl.DataFrame| None = None) -> pd.DataFrame:
     for i in range(6):
         test_feats[f'deberta_oof_{i}'] = predicted_score[:, i]
     fb3_predicted = get_fb3_predicted()
+    
     argument_predicted = argument_classifier.predict_chunk(train = pd.read_csv(TEST_DATA_PATH))
     for i in range(2):
         test_feats[f'argument_{i}'] = argument_predicted.iloc[:, i]
@@ -716,6 +718,9 @@ def preprocess_test(test: pl.DataFrame| None = None) -> pd.DataFrame:
         left_on="essay_id",
         right_on="text_id"
     ).drop("text_id", axis=1)
+
+    # add_feats = added_features.predict_chunk(train = pd.read_csv(TEST_DATA_PATH))
+    # test_feats = pd.concat([test_feats, add_feats], axis = 1)
 
     # Features number
     feature_names = list(filter(lambda x: x not in ['essay_id','score'], test_feats.columns))

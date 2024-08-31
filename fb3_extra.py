@@ -1,4 +1,6 @@
-# %% [markdown]
+#!/usr/bin/env python
+# coding: utf-8
+
 # If you have time, please check my other notebooks.
 # 
 # * Train : https://www.kaggle.com/kojimar/fb3-single-pytorch-model-train
@@ -8,8 +10,12 @@
 # * https://www.kaggle.com/code/yasufuminakama/fb3-deberta-v3-base-baseline-train
 # * https://www.kaggle.com/code/yasufuminakama/fb3-deberta-v3-base-baseline-inference
 
+# In[ ]:
+
+
 import os
 os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+os.environ["CUDA_VISIBLE_DEVICES"] = "6,7,8"
 import gc
 import re
 import ast
@@ -51,10 +57,9 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# %% [markdown]
+
 # # CFG
 
-# %% [markdown]
 # Deberta Family ver. 13
 # 
 # Sep. 28, LB 21th
@@ -224,12 +229,12 @@ class CFG10:
     num_workers=4
     weight = 1.0
     
-CFG_list = [CFG4]
 
-# CFG4, CFG7,
 # # Utils
 
-# %%
+# In[ ]:
+
+
 # ====================================================
 # Utils
 # ====================================================
@@ -272,24 +277,22 @@ def seed_everything(seed=42):
     
 seed_everything(seed=42)
 
-# %% [markdown]
+
 # # OOF
 
-# %%
+# In[ ]:
+
+
 # ====================================================
 # oof
 # ====================================================
-for CFG in CFG_list:
-    oof_df = pd.read_pickle(CFG.path+'oof_df.pkl')
-    labels = oof_df[CFG.target_cols].values
-    preds = oof_df[[f"pred_{c}" for c in CFG.target_cols]].values
-    score, scores = get_score(labels, preds)
-    LOGGER.info(f'Model: {CFG.model} Score: {score:<.4f}  Scores: {scores}')
 
-# %% [markdown]
+
 # # Dataset
 
-# %%
+# In[ ]:
+
+
 # ====================================================
 # Dataset
 # ====================================================
@@ -319,10 +322,12 @@ class TestDataset(Dataset):
         inputs = prepare_input(self.cfg, self.texts[item])
         return inputs
 
-# %% [markdown]
+
 # # Model
 
-# %%
+# In[ ]:
+
+
 # ====================================================
 # Model
 # ====================================================
@@ -408,10 +413,12 @@ class CustomModel(nn.Module):
         output = self.fc(feature)
         return output
 
-# %% [markdown]
+
 # # inference
 
-# %%
+# In[ ]:
+
+
 # ====================================================
 # inference
 # ====================================================
@@ -429,12 +436,16 @@ def inference_fn(test_loader, model, device):
     predictions = np.concatenate(preds)
     return predictions
 
-# %%
+
+# In[ ]:
+
+
 import os
 
 
 
 def predict_chunk(test: pd.DataFrame) -> pd.DataFrame:
+    CFG_list = [CFG4, CFG7, CFG10]
 
     for _idx, CFG in enumerate(CFG_list):
     #     test = pd.read_csv('../input/feedback-prize-english-language-learning/test.csv')
@@ -470,7 +481,7 @@ def predict_chunk(test: pd.DataFrame) -> pd.DataFrame:
         predictions = np.mean(predictions, axis=0)
         test[CFG.target_cols] = predictions
         submission = submission.drop(columns=CFG.target_cols).merge(test[['text_id'] + CFG.target_cols], on='text_id', how='left')
-#         display(submission.head())
+    #         display(submission.head())
         submission[['text_id'] + CFG.target_cols].to_csv(f'submission_{_idx + 1}.csv', index=False)
         torch.cuda.empty_cache()
         gc.collect()
@@ -478,19 +489,36 @@ def predict_chunk(test: pd.DataFrame) -> pd.DataFrame:
 
          
 def predict(test: pd.DataFrame) -> pd.DataFrame:
-    result = pd.DataFrame()
-    for i, chunk in enumerate(np.array_split(test, 10)):
-        if len(chunk) == 0:
-            continue
-        result = pd.concat(
-            [result, predict_chunk(chunk.reset_index(drop=True))]
-        ).reset_index(drop=True)
-    return result
+    prediction = pd.DataFrame()
+    CFG_list = [CFG4, CFG7, CFG10]
+    
+    for j, CFG in enumerate(CFG_list):
+        result = pd.DataFrame()
+        CFG_inli = [CFG]
+        oof_df = pd.read_pickle(CFG.path+'oof_df.pkl')
+        labels = oof_df[CFG.target_cols].values
+        preds = oof_df[[f"pred_{c}" for c in CFG.target_cols]].values
+        score, scores = get_score(labels, preds)
+        LOGGER.info(f'Model: {CFG.model} Score: {score:<.4f}  Scores: {scores}')
+        
+        for i, chunk in enumerate(np.array_split(test, 10)):
+            if len(chunk) == 0:
+                continue
+            result = pd.concat(
+                [result, predict_chunk(test=chunk.reset_index(drop=True))]
+                ).reset_index(drop=True)
+        if j > 0:
+            result = result.drop(columns=['text_id'])
+            result = result.add_suffix(f'_{j}')
+    prediction = pd.concat([prediction, result], axis = 1)
+    return prediction
 
 if __name__ == "__main__":
     test = pd.read_csv(
-            'kaggle/input/learning-agency-lab-automated-essay-scoring-2/train.csv'
-    ).rename(columns={"essay_id": "text_id"})
-    submission = predict(test)
-    submission.to_csv(f'/home/mcq/GitHub/aes2/train_data/fb3_feat_4.csv', index=False)
+            '/home/mcq/GitHub/aes2/kaggle/input/learning-agency-lab-automated-essay-scoring-2/train.csv'
+            ).rename(columns={"essay_id": "text_id"})
+    submission = predict(test=test.head(500))
+    submission.to_csv(f'fb3_feat.csv', index=False)
 
+
+# %%

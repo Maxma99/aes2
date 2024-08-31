@@ -16,3 +16,5 @@ best_model.weights.h5
 argument-classifier/
 fb3models/
 *.pickle
+encoder2/
+fold_*/

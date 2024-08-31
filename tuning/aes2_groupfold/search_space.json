@@ -1,0 +1,26 @@
+{
+    "gpu_id":{
+        "_type": "quniform",
+        "_value": [0, 4, 1]
+    },
+    "ratio":{
+        "_type": "quniform",
+        "_value": [0.5, 1, 0.01]
+    },
+    "reg_alpha_lgb": {
+        "_type": "quniform",
+        "_value": [0.0, 1.0, 0.05]
+    },
+    "reg_lambda_lgb": {
+        "_type": "quniform",
+        "_value": [0.0, 1.0, 0.05]
+    },
+    "reg_alpha_xgb": {
+        "_type": "quniform",
+        "_value": [0.0, 1.0, 0.05]
+    },
+    "reg_lambda_xgb": {
+        "_type": "quniform",
+        "_value": [0.0, 2.0, 0.05]
+    }
+}
